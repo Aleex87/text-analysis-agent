@@ -115,8 +115,7 @@ def main() -> None:
             continue
 
         try:
-            answer = agent.chat(user_input)
-            print(answer)
+            agent.chat(user_input)
             print()
         except Exception as exc:
             print(f"Error: {exc}\n")
@@ -124,4 +123,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    

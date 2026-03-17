@@ -46,18 +46,9 @@ class TextAnalystAgent:
             stream_mode=STREAM_MODES,
         )
 
-        result = handle_stream(stream)
+        handle_stream(stream)
 
-        
-        ai_text = result["messages"][-1].content
-
-        if isinstance(ai_text, list):
-            ai_text = "".join(
-                part.get("text", "") if isinstance(part, dict) else str(part)
-                for part in ai_text
-            )
-
-        ai_text = str(ai_text).strip()
+        ai_text = "[response streamed]"
 
         self.memory.add_ai_message(ai_text)
 
