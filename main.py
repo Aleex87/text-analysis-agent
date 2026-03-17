@@ -6,20 +6,67 @@ import os
 DATA_FOLDER = "data"
 
 
+def list_text_files() -> list[str]:
+    if not os.path.exists(DATA_FOLDER):
+        os.makedirs(DATA_FOLDER, exist_ok=True)
+        return []
+
+    files = []
+    for name in os.listdir(DATA_FOLDER):
+        path = os.path.join(DATA_FOLDER, name)
+        if os.path.isfile(path) and name.lower().endswith(".txt"):
+            files.append(name)
+
+    return sorted(files)
+
+
 def load_text_from_file(filename: str) -> str:
     path = os.path.join(DATA_FOLDER, filename)
 
     if not os.path.exists(path):
-        raise FileNotFoundError(f"File '{filename}' not found in '{DATA_FOLDER}/'")
+        raise FileNotFoundError(
+            f"File '{filename}' not found in '{DATA_FOLDER}/'"
+        )
 
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
-def list_files():
-    if not os.path.exists(DATA_FOLDER):
-        return []
-    return os.listdir(DATA_FOLDER)
+def choose_file() -> str:
+    print("Please select which file you want to analyze.")
+    print(
+        "If you want to add a new file, drag and drop it into the "
+        "'data/' folder of this project, then type the correct file name.\n"
+    )
+
+    while True:
+        files = list_text_files()
+
+        if files:
+            print("Available files:")
+            for file_name in files:
+                print(f"- {file_name}")
+            print()
+        else:
+            print("No .txt files found in the 'data/' folder.\n")
+
+        filename = input("File name (or type exit): ").strip()
+
+        if filename.lower() == "exit":
+            return ""
+
+        if not filename:
+            print("Please enter a file name.\n")
+            continue
+
+        if filename not in files:
+            print(
+                f"File '{filename}' is not available in '{DATA_FOLDER}/'. "
+                "Please check the name and try again.\n"
+            )
+            continue
+
+        return filename
 
 
 def main() -> None:
@@ -31,60 +78,23 @@ def main() -> None:
         version="0.1.0",
     )
 
-    print("Choose input type:")
-    print("1 - Paste text")
-    print("2 - Load from file\n")
+    filename = choose_file()
+    if not filename:
+        return
 
-    while True:
-        choice = input("> ").strip()
+    try:
+        text = load_text_from_file(filename)
+    except Exception as exc:
+        print(f"Error reading file: {exc}")
+        return
 
-        if choice == "1":
-            print("\nPaste your text (or type exit):\n")
+    if len(text.split()) < 5:
+        print("The selected file is too short. Please use a longer text.")
+        return
 
-            while True:
-                text = input("> ")
+    agent.set_text(text)
 
-                if text.lower() == "exit":
-                    return
-
-                if text.strip():
-                    agent.set_text(text)
-                    break
-            break
-
-        elif choice == "2":
-            print("\nPlace your file inside the 'data/' folder.\n")
-
-            files = list_files()
-            if files:
-                print("Available files:")
-                for f in files:
-                    print(f"- {f}")
-                print()
-            else:
-                print("No files found in 'data/' folder.\n")
-
-            print("Enter file name (example: article.txt) or type exit:\n")
-
-            while True:
-                filename = input("> ").strip()
-
-                if filename.lower() == "exit":
-                    return
-
-                try:
-                    text = load_text_from_file(filename)
-                    agent.set_text(text)
-                    print("\nFile loaded successfully.\n")
-                    break
-                except Exception as e:
-                    print(f"Error: {e}")
-                    print("Try again or type exit\n")
-            break
-
-        else:
-            print("Invalid choice. Please type 1 or 2.\n")
-
+    print(f"\nLoaded file: {filename}")
     print("You can now ask questions about the text.")
     print("Commands: reset, exit\n")
 
@@ -95,11 +105,13 @@ def main() -> None:
             continue
 
         if user_input.lower() == "exit":
+            print("Goodbye.")
             break
 
         if user_input.lower() == "reset":
             agent.reset()
-            print("Memory cleared.\n")
+            agent.set_text(text)
+            print("Memory cleared. The source text is still loaded.\n")
             continue
 
         try:
