@@ -5,6 +5,7 @@ from memory import ConversationMemory
 from prompts import get_system_prompt
 from tools import split_text, search_keyword
 from util.models import get_model
+from util.streaming_utils import handle_stream, STREAM_MODES
 
 
 class TextAnalystAgent:
@@ -31,6 +32,7 @@ class TextAnalystAgent:
         source_text = self.memory.get_text() or ""
         messages = self.memory.get_messages()
 
+        # Inject source text as context
         messages_with_context = [
             {
                 "role": "user",
@@ -38,11 +40,16 @@ class TextAnalystAgent:
             }
         ] + messages
 
-        response = self.agent.invoke({
-            "messages": messages_with_context,
-        })
+        
+        stream = self.agent.stream(
+            {"messages": messages_with_context},
+            stream_mode=STREAM_MODES,
+        )
 
-        ai_text = response["messages"][-1].content
+        result = handle_stream(stream)
+
+        
+        ai_text = result["messages"][-1].content
 
         if isinstance(ai_text, list):
             ai_text = "".join(
@@ -51,10 +58,10 @@ class TextAnalystAgent:
             )
 
         ai_text = str(ai_text).strip()
+
         self.memory.add_ai_message(ai_text)
 
         return ai_text
 
     def reset(self) -> None:
         self.memory.clear()
-        
